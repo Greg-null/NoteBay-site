@@ -1,6 +1,6 @@
 # NoteBay-Website & Legal-Seiten auf GitHub Pages veröffentlichen
 
-Diese Anleitung richtet das öffentliche Repo **`Greg-null/notebay-site`** ein und veröffentlicht
+Diese Anleitung richtet das öffentliche Repo **`Greg-null/NoteBay-site`** ein und veröffentlicht
 darüber die Website und die Rechtsseiten. Die fertigen URLs matchen die Links, die im OnePager
 (WP-39) bereits im Footer hinterlegt sind:
 
