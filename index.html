@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoteBay — Native Notiz-App für Mac &amp; iPhone</title>
+<meta name="description" content="NoteBay ist eine native Notiz-App für macOS und iOS: schwebende Notizfenster, Menüleisten-Capture, Block-Editor, iCloud-Sync und ein lokaler MCP-Server mit ordnergenauer KI-Zugriffskontrolle.">
+<link rel="alternate" hreflang="de" href="https://notebay.app/">
+<link rel="alternate" hreflang="en" href="https://notebay.app/en/">
+<link rel="alternate" hreflang="x-default" href="https://notebay.app/">
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="%230A66D0"/><path d="M18 46V18h6l16 20V18h6v28h-6L24 26v20z" fill="white"/></svg>'>
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --bg-raise: #FFFFFF;
+    --ink: #1C1C1E;
+    --ink-2: rgba(28, 28, 30, 0.64);
+    --ink-3: rgba(28, 28, 30, 0.42);
+    --line: rgba(28, 28, 30, 0.12);
+    --accent: #0A66D0;
+    --accent-ink: #FFFFFF;
+    --accent-wash: rgba(10, 102, 208, 0.08);
+    --shot-edge: rgba(28, 28, 30, 0.14);
+    --shadow: 0 30px 70px -30px rgba(30, 34, 44, 0.45);
+    --shadow-soft: 0 16px 44px -22px rgba(30, 34, 44, 0.38);
+    --code-bg: #15171B;
+    --code-ink: #E9ECF2;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131315;
+      --bg-raise: #1D1D20;
+      --ink: #F4F4F6;
+      --ink-2: rgba(244, 244, 246, 0.66);
+      --ink-3: rgba(244, 244, 246, 0.42);
+      --line: rgba(244, 244, 246, 0.14);
+      --accent: #409CFF;
+      --accent-ink: #0B1420;
+      --accent-wash: rgba(64, 156, 255, 0.12);
+      --shot-edge: rgba(244, 244, 246, 0.16);
+      --shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+      --shadow-soft: 0 16px 44px -22px rgba(0, 0, 0, 0.7);
+      --code-bg: #0C0E11;
+      --code-ink: #DFE3EA;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  img { max-width: 100%; height: auto; display: block; }
+  code { font-family: var(--mono); font-size: 0.85em; background: var(--accent-wash); padding: 2px 6px; border-radius: 5px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+  /* Kopf */
+  header.site {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .site-row { display: flex; align-items: center; gap: 24px; min-height: 58px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+  .brand:hover { text-decoration: none; }
+  .brand svg { border-radius: 7px; display: block; }
+  nav.main { margin-left: auto; display: flex; gap: 26px; font-size: 15px; }
+  nav.main a { color: var(--ink-2); }
+  nav.main a:hover { color: var(--ink); text-decoration: none; }
+  .lang {
+    font-size: 13px; font-weight: 600; color: var(--ink-3);
+    border: 1px solid var(--line); border-radius: 7px; padding: 3px 9px;
+  }
+  .lang:hover { color: var(--ink); border-color: var(--ink-3); text-decoration: none; }
+  @media (max-width: 620px) {
+    header.site .wrap { padding: 0 16px; }
+    .site-row { gap: 12px; }
+    nav.main { gap: 13px; font-size: 13.5px; }
+    .lang { font-size: 12px; padding: 2px 7px; }
+  }
+
+  /* Hero */
+  .hero { padding: 96px 0 40px; overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 64px; align-items: center; }
+  .hero h1 {
+    font-size: clamp(3.4rem, 8vw, 5.2rem);
+    line-height: 0.98; letter-spacing: -0.035em; font-weight: 800;
+  }
+  .hero .tagline {
+    margin-top: 18px; font-size: clamp(1.25rem, 2.6vw, 1.55rem);
+    font-weight: 600; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .hero .lede { margin-top: 16px; color: var(--ink-2); max-width: 30em; }
+  .hero .store { margin-top: 34px; font-size: 14px; color: var(--ink-3); }
+  .hero-visual { position: relative; min-height: 480px; }
+  .hero-visual .mac {
+    width: 78%; border-radius: 14px; border: 1px solid var(--shot-edge);
+    box-shadow: var(--shadow);
+  }
+  .hero-visual .phone {
+    position: absolute; right: 0; bottom: -24px; width: 44%;
+    border-radius: 26px; border: 1px solid var(--shot-edge);
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 900px) {
+    .hero { padding-top: 64px; }
+    .hero-grid { grid-template-columns: 1fr; gap: 56px; }
+    .hero-visual { min-height: 0; max-width: 460px; }
+    .hero-visual .phone { bottom: -18px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero h1, .hero .tagline, .hero .lede, .hero .store { animation: rise 0.6s ease both; }
+    .hero .tagline { animation-delay: 0.06s; }
+    .hero .lede { animation-delay: 0.12s; }
+    .hero .store { animation-delay: 0.18s; }
+    .hero-visual { animation: rise 0.7s 0.1s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* Breite Bildbühne (schwebende Notiz) */
+  .stage { padding: 96px 0 0; }
+  .stage .shot-wide {
+    border-radius: 18px; border: 1px solid var(--shot-edge);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .stage .shot-wide img { width: 100%; }
+  .stage .stage-copy { max-width: 560px; margin-top: 40px; }
+
+  /* Feature-Zeilen */
+  section.features { padding: 40px 0 20px; }
+  .feature {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(40px, 7vw, 96px); align-items: center;
+    padding: 72px 0;
+  }
+  .feature:nth-of-type(even) .feature-visual { order: -1; }
+  h2 {
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+    line-height: 1.12; letter-spacing: -0.025em; font-weight: 750;
+  }
+  .feature p { margin-top: 16px; color: var(--ink-2); max-width: 30em; }
+  .feature-visual { display: flex; justify-content: center; }
+  .shot {
+    border-radius: 14px; border: 1px solid var(--shot-edge);
+    box-shadow: var(--shadow-soft); overflow: hidden;
+    background: var(--bg-raise);
+  }
+  .shot-phone { border-radius: 30px; width: min(300px, 80vw); }
+  .shot-panel { width: min(440px, 90vw); }
+  @media (max-width: 860px) {
+    .feature { grid-template-columns: 1fr; gap: 36px; padding: 56px 0; }
+    .feature:nth-of-type(even) .feature-visual { order: 0; }
+  }
+  .band {
+    border-top: 1px solid var(--line);
+    padding: 64px 0 72px; max-width: 560px;
+  }
+  .band p { margin-top: 16px; color: var(--ink-2); }
+
+  /* MCP */
+  section.mcp { border-top: 1px solid var(--line); padding: 88px 0; }
+  .mcp-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(40px, 6vw, 88px); }
+  @media (max-width: 960px) { .mcp-grid { grid-template-columns: minmax(0, 1fr); } }
+  .mcp-grid > * { min-width: 0; }
+  .mcp .intro { margin-top: 18px; color: var(--ink-2); max-width: 34em; }
+  .mcp h3 { font-size: 1.02rem; font-weight: 650; margin: 34px 0 10px; letter-spacing: -0.01em; }
+  ul.examples { list-style: none; }
+  ul.examples li {
+    padding: 9px 0 9px 18px; color: var(--ink-2);
+    border-left: 2px solid var(--accent); margin: 8px 0;
+    font-style: italic;
+  }
+  ul.safety { list-style: none; }
+  ul.safety li { padding: 10px 0; color: var(--ink-2); border-bottom: 1px solid var(--line); }
+  ul.safety li:first-child { border-top: 1px solid var(--line); }
+  .codebox { position: relative; margin-top: 12px; }
+  .codebox pre {
+    background: var(--code-bg); color: var(--code-ink);
+    font-family: var(--mono); font-size: 13px; line-height: 1.7;
+    border-radius: 12px; padding: 18px 20px; overflow-x: auto;
+  }
+  .codebox .tok-k { color: #8FB8E8; }
+  .codebox .tok-s { color: #A8D08D; }
+  .copy-btn {
+    position: absolute; top: 10px; right: 10px;
+    font: 600 12px var(--sans); color: var(--code-ink);
+    background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 7px; padding: 5px 11px; cursor: pointer;
+  }
+  .copy-btn:hover { background: rgba(255, 255, 255, 0.2); }
+  .setup-note { margin-top: 14px; font-size: 14.5px; color: var(--ink-3); }
+  .skill-row {
+    margin-top: 36px; display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+    border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px;
+    background: var(--bg-raise);
+  }
+  .skill-row p { color: var(--ink-2); font-size: 15px; flex: 1 1 260px; margin: 0; }
+  .btn {
+    display: inline-block; background: var(--accent); color: var(--accent-ink);
+    font-weight: 600; font-size: 15px; border-radius: 10px; padding: 11px 20px;
+    white-space: nowrap;
+  }
+  .btn:hover { text-decoration: none; filter: brightness(1.08); }
+
+  /* FAQ */
+  section.faq-sec { border-top: 1px solid var(--line); padding: 88px 0; }
+  .faq { max-width: 760px; margin-top: 28px; }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq details:first-of-type { border-top: 1px solid var(--line); }
+  .faq summary {
+    cursor: pointer; list-style: none; display: flex; gap: 14px; align-items: baseline;
+    padding: 18px 4px; font-weight: 600; font-size: 1.02rem;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::before { content: "+"; font-family: var(--mono); color: var(--accent); flex: none; width: 1em; }
+  .faq details[open] summary::before { content: "–"; }
+  .faq details > div { padding: 0 4px 22px 34px; color: var(--ink-2); font-size: 15px; max-width: 60em; }
+  .faq details > div code { font-size: 12.5px; }
+
+  /* Fuß */
+  footer.site {
+    border-top: 1px solid var(--line); padding: 40px 0 56px;
+    font-size: 14.5px; color: var(--ink-3);
+  }
+  .foot-grid { display: flex; flex-wrap: wrap; gap: 18px 48px; justify-content: space-between; }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap site-row">
+    <a class="brand" href="#top" aria-label="NoteBay, zum Seitenanfang">
+      <svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0A66D0"/><path d="M18 46V18h6l16 20V18h6v28h-6L24 26v20z" fill="white"/></svg>
+      NoteBay
+    </a>
+    <nav class="main" aria-label="Seitennavigation">
+      <a href="#funktionen">Funktionen</a>
+      <a href="#mcp">KI-Zugriff</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="lang" href="en/index.html" hreflang="en" lang="en" aria-label="Switch to the English version">EN</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1>NoteBay</h1>
+        <p class="tagline">Native Notiz-App für Mac &amp; iPhone.</p>
+        <p class="lede">Schnell notieren, sauber ordnen. Und wenn eine KI mitarbeiten soll,
+        entscheidest du pro Ordner, was sie zu sehen bekommt.</p>
+        <p class="store">Bald im App Store.</p>
+      </div>
+      <div class="hero-visual">
+        <picture>
+          <source srcset="assets/macos-library-dark.png" media="(prefers-color-scheme: dark)">
+          <img class="mac" src="assets/macos-library-light.png" width="698" height="1116"
+               alt="NoteBay auf dem Mac mit Ordnerliste und Notizenliste, eine Notiz ist als Favorit markiert">
+        </picture>
+        <picture>
+          <source srcset="assets/ios-notes-dark.png" media="(prefers-color-scheme: dark)">
+          <img class="phone" src="assets/ios-notes-light.png" width="640" height="1391"
+               alt="NoteBay auf dem iPhone mit der Notizenliste des Ordners Unsortiert, eine Notiz ist gelb markiert">
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="funktionen">
+    <div class="wrap">
+      <div class="shot-wide">
+        <img src="assets/macos-floating-note.png" width="1400" height="463"
+             alt="Ein schwebendes NoteBay-Notizfenster mit der Notiz Go-Live API-Migration liegt über einem TextEdit-Dokument">
+      </div>
+      <div class="stage-copy">
+        <h2>Die Notiz schwebt über allem</h2>
+        <p style="margin-top:16px;color:var(--ink-2)">Öffne jede Notiz als eigenes kleines Fenster.
+        Es bleibt über der App sichtbar, in der du gerade arbeitest, und stiehlt ihr beim Tippen nicht den Fokus.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="wrap">
+
+      <div class="feature">
+        <div>
+          <h2>Festhalten, ohne das Fenster zu wechseln</h2>
+          <p>NoteBay sitzt in der Menüleiste. <code>⌥⌘N</code> öffnet eine leere Notiz direkt
+          über deiner aktuellen Arbeit. Zwei Sätze getippt, Fenster zu, weiter.</p>
+        </div>
+        <div class="feature-visual">
+          <img class="shot shot-panel" src="assets/macos-floating.png" width="1400" height="948"
+               alt="Eine frisch geöffnete leere NoteBay-Schnellnotiz schwebt über einem TextEdit-Protokoll">
+        </div>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h2>Schreiben in Blöcken</h2>
+          <p><code>##</code> wird beim Tippen zur Überschrift, <code>- [ ]</code> zur Checkliste,
+          <code>```</code> zum Codeblock. Wichtige Stellen markierst du in fünf Highlight-Farben.</p>
+        </div>
+        <div class="feature-visual">
+          <img class="shot shot-panel" src="assets/macos-panel-editor.png" width="720" height="450"
+               alt="NoteBay-Notiz mit Überschriften, fett markiertem Text und einem blauen Highlight auf dem Termin Freitag 18:00">
+        </div>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h2>Farben und Ordner</h2>
+          <p>Gib Notizen eine Farbe und verschachtele Ordner, wie du willst.
+          Am Ordnersymbol erkennst du, was deine KI sehen darf.</p>
+        </div>
+        <div class="feature-visual">
+          <picture>
+            <source srcset="assets/ios-folders-dark.png" media="(prefers-color-scheme: dark)">
+            <img class="shot shot-phone" src="assets/ios-folders-light.png" width="640" height="1385"
+                 alt="Ordnerliste auf dem iPhone mit den Ordnern Unsortiert, Code-Snippets, Meetings, Privat und Projekte">
+          </picture>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="wrap">
+      <div class="band">
+        <h2>Auf dem iPhone dabei</h2>
+        <p>Deine Notizen kommen über deine private iCloud aufs iPhone, ein eigenes Konto
+        brauchst du dafür nicht. Unterwegs legst du neue Notizen direkt über das
+        Home-Screen-Widget an. Wiederfinden übernimmt die Volltextsuche.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="mcp" id="mcp">
+    <div class="wrap">
+      <h2>KI-Zugriff über MCP</h2>
+      <p class="intro">NoteBay bringt einen lokalen MCP-Server mit. KI-Assistenten wie Claude
+      lesen, erstellen und sortieren Notizen damit direkt in deiner Bibliothek — aber nur in
+      Ordnern, die du per Rechtsklick freigegeben hast. Alles andere bleibt für die KI unsichtbar.</p>
+
+      <div class="mcp-grid">
+        <div>
+          <h3>Was du damit anstellen kannst</h3>
+          <ul class="examples">
+            <li>„Fass die Meeting-Notizen dieser Woche zu einer Übersicht zusammen.“</li>
+            <li>„Leg für jedes offene Thema aus dem Protokoll eine eigene Notiz an.“</li>
+            <li>„Räum den Ordner Projekte auf und benenne die Notizen einheitlich.“</li>
+            <li>„Such alles zur API-Migration und stell mir einen Statusbericht zusammen.“</li>
+          </ul>
+
+          <h3>Was dabei geschützt bleibt</h3>
+          <ul class="safety">
+            <li>Freigaben gelten pro Ordner. Was nicht freigegeben ist, taucht in keiner
+            Antwort auf, nicht einmal in Fehlermeldungen.</li>
+            <li>Der Server ist nur auf deinem Mac erreichbar und verlangt bei jeder Verbindung
+            ein Pairing-Token.</li>
+            <li>Bevor eine KI etwas ändert, sichert NoteBay den alten Stand als Snapshot —
+            30 Tage lang mit einem Klick wiederherstellbar.</li>
+            <li>Jede Operation steht im Audit-Log. Werkzeuge zum Löschen gibt es im MCP nicht.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Einrichtung</h3>
+          <div class="codebox">
+            <button class="copy-btn" type="button" data-copy-target="mcp-snippet" aria-label="Konfigurations-Snippet kopieren">Kopieren</button>
+<pre id="mcp-snippet">{
+  <span class="tok-k">"mcpServers"</span>: {
+    <span class="tok-k">"notebay"</span>: {
+      <span class="tok-k">"type"</span>: <span class="tok-s">"http"</span>,
+      <span class="tok-k">"url"</span>: <span class="tok-s">"http://127.0.0.1:27431/mcp"</span>,
+      <span class="tok-k">"headers"</span>: {
+        <span class="tok-k">"Authorization"</span>: <span class="tok-s">"Bearer &lt;DEIN-TOKEN&gt;"</span>
+      }
+    }
+  }
+}</pre>
+          </div>
+          <p class="setup-note">Dein Token und das fertig ausgefüllte Snippet findest du
+          in NoteBay unter Einstellungen&nbsp;→&nbsp;KI-Zugriff.</p>
+
+          <div class="skill-row">
+            <p>Für KI-Agenten gibt es ein fertiges Skill-Paket mit allen Werkzeugen,
+            Beispielaufrufen und den Markdown-Konventionen.</p>
+            <a class="btn" href="downloads/notebay-mcp-skill.zip" download>Skill laden (ZIP)</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq-sec" id="faq">
+    <div class="wrap">
+      <h2>Häufige Fragen</h2>
+      <div class="faq">
+        <details>
+          <summary>Wo liegen meine Notizen — und wer kann sie sehen?</summary>
+          <div>Lokal auf deinen Geräten und, für den Sync, in deiner privaten iCloud
+          (CloudKit Private Database). Es gibt kein NoteBay-Konto, kein Tracking
+          und keine eigenen Server. Der MCP-Server bindet ausschließlich an
+          <code>127.0.0.1</code> — er ist aus dem Netzwerk nicht erreichbar, und ohne
+          Pairing-Token wird jede Verbindung abgewiesen.</div>
+        </details>
+        <details>
+          <summary>Funktioniert NoteBay offline?</summary>
+          <div>Ja, vollständig. NoteBay ist offline-first: Der komplette Datenbestand liegt
+          lokal, alles funktioniert ohne Internet — Erfassen, Bearbeiten, Suchen, sogar der
+          KI-Zugriff (der läuft ja über localhost). Der iCloud-Sync holt Änderungen
+          nach, sobald wieder eine Verbindung besteht.</div>
+        </details>
+        <details>
+          <summary>Was kostet NoteBay wirklich?</summary>
+          <div>Bis 20 Notizen ist NoteBay gratis — mit vollem Funktionsumfang: Sync, MCP,
+          Export, Archiv, alle Editor-Funktionen. Das Notizen-Limit ist die einzige Grenze.
+          Die Vollversion hebt es auf: einmalig 2,99&nbsp;€ als In-App-Kauf, gültig auf
+          allen Geräten derselben Apple-ID, mit Familienfreigabe. Kein Abo, keine
+          wiederkehrenden Kosten.</div>
+        </details>
+        <details>
+          <summary>Kann eine KI meine Notizen löschen oder an geblockte Inhalte gelangen?</summary>
+          <div>Nein. Lösch-Werkzeuge existieren im MCP nicht — auch kein Papierkorb-Zugriff.
+          Geblockte Inhalte tauchen in keinem Listing, keiner Suche und keinem Zähler auf;
+          selbst der Zugriff per bekannter ID liefert nur <code>not_found</code>. Und bevor
+          eine KI etwas ändert, entsteht automatisch ein Snapshot (30 Tage), den du mit einem
+          Klick wiederherstellst. Jede Operation steht im Audit-Log.</div>
+        </details>
+        <details>
+          <summary>Auf welchen Geräten läuft NoteBay?</summary>
+          <div>Auf dem Mac ab macOS&nbsp;15 (Sequoia) — inklusive Menüleisten-Widget,
+          schwebender Fenster und MCP-Server. Auf dem iPhone ab iOS&nbsp;18, mit
+          Home-Screen-Widget für schnelles Erfassen. Der MCP-Server ist bewusst Teil der
+          Mac-App: Ohne laufende App kein Zugriff. Eine iPad-Version ist für später geplant.</div>
+        </details>
+        <details>
+          <summary>Komme ich mit meinen Daten auch wieder raus?</summary>
+          <div>Jederzeit. NoteBay exportiert die komplette Bibliothek als
+          Markdown-Ordnerstruktur: Ordner werden Verzeichnisse, Notizen werden
+          <code>.md</code>-Dateien, Anhänge liegen daneben — mit relativen Verweisen.
+          Keine proprietäre Sackgasse.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap foot-grid">
+    <div>
+      <strong style="color: var(--ink)">NoteBay</strong> · Notizen mit KI-Kontrolle<br>
+      © 2026 Gregory Reinke
+    </div>
+    <div class="foot-links">
+      <a href="legal/impressum.html">Impressum</a>
+      <a href="legal/privacy.html">Datenschutz</a>
+      <a href="mailto:reinke.support@gmail.com">Support: reinke.support@gmail.com</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Kopier-Button: Clipboard-API mit Fallback (funktioniert auch über file://).
+  document.querySelectorAll(".copy-btn").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var target = document.getElementById(button.getAttribute("data-copy-target"));
+      if (!target) return;
+      var text = target.innerText;
+      function done(ok) {
+        button.textContent = ok ? "Kopiert ✓" : "Fehler";
+        setTimeout(function () { button.textContent = "Kopieren"; }, 1800);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { fallback(); });
+      } else {
+        fallback();
+      }
+      function fallback() {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) {}
+        document.body.removeChild(area);
+        done(ok);
+      }
+    });
+  });
+</script>
+</body>
+</html>
